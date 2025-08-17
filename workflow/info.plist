@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.yourdomain.orb-alfred</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>9A2B3C4D-5E6F-7890-ABCD-123456789012</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>1B2C3D4E-5F6A-7890-BCDE-123456789012</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>OrbStack Alfred Workflow</string>
+	<key>description</key>
+	<string>Manage OrbStack Docker containers directly from Alfred</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>OrbStack Container Manager</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>orb</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>Loading containers...</string>
+				<key>script</key>
+				<string>/usr/bin/python3 scripts/script_filter.py {query}</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>List and manage OrbStack containers</string>
+				<key>title</key>
+				<string>OrbStack Containers</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>9A2B3C4D-5E6F-7890-ABCD-123456789012</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>0</integer>
+				<key>script</key>
+				<string>/usr/bin/python3 scripts/dispatcher.py "{query}"</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>1B2C3D4E-5F6A-7890-BCDE-123456789012</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string>OrbStack Alfred Workflow
+
+This workflow allows you to manage OrbStack Docker containers directly from Alfred.
+
+Usage:
+- Type 'orb' to list all containers
+- Enter: Open URL for web services, shell for others
+- Cmd+Enter: Open orb.local URL
+- Alt+Enter: Start/stop container
+- Ctrl+Enter: Show logs
+- Shift+Enter: Copy URL to clipboard
+
+Requirements:
+- macOS 13+
+- Alfred 5+
+- OrbStack installed
+- Docker CLI in PATH
+
+Setup:
+1. Install OrbStack
+2. Ensure /opt/homebrew/bin (Apple Silicon) or /usr/local/bin (Intel) is in Alfred's PATH
+3. Import this workflow
+
+For help and troubleshooting, see the README.md file.</string>
+	<key>uidata</key>
+	<dict>
+		<key>9A2B3C4D-5E6F-7890-ABCD-123456789012</key>
+		<dict>
+			<key>xpos</key>
+			<integer>100</integer>
+			<key>ypos</key>
+			<integer>100</integer>
+		</dict>
+		<key>1B2C3D4E-5F6A-7890-BCDE-123456789012</key>
+		<dict>
+			<key>xpos</key>
+			<integer>300</integer>
+			<key>ypos</key>
+			<integer>100</integer>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array/>
+	<key>variables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+	</dict>
+	<key>variablesdontexport</key>
+	<array/>
+	<key>version</key>
+	<string>1.0.0</string>
+	<key>webaddress</key>
+	<string>https://github.com/username/orbstack-alfred-workflow</string>
+</dict>
+</plist>
