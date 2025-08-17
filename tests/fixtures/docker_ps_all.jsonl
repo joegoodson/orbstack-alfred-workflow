@@ -1,0 +1,5 @@
+{"ID":"4f3c2d1e90a1","Names":"/0089-dramdeals-web","Image":"nginx:alpine","Status":"Up 2 hours","Ports":"0.0.0.0:8080->80/tcp","Labels":"com.docker.compose.project=0089-dramdeals,com.docker.compose.service=web"}
+{"ID":"7a8b9c0d1e2f","Names":"/0089-dramdeals-web_db","Image":"postgres:15","Status":"Up 2 hours","Ports":"","Labels":"com.docker.compose.project=0089-dramdeals,com.docker.compose.service=web_db"}
+{"ID":"1f2a3b4c5d6e","Names":"/standalone-redis","Image":"redis:7","Status":"Exited (0) 1 hour ago","Ports":"","Labels":""}
+{"ID":"5e6f7a8b9c0d","Names":"/testing-app","Image":"node:18","Status":"Up 30 minutes","Ports":"0.0.0.0:3000->3000/tcp","Labels":""}
+{"ID":"9c0d1e2f3a4b","Names":"/unhealthy-service","Image":"custom/app","Status":"Up 5 minutes (unhealthy)","Ports":"0.0.0.0:8081->8080/tcp","Labels":"com.docker.compose.project=test-project,com.docker.compose.service=app"}

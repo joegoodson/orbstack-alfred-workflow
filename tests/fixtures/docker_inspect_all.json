@@ -1,0 +1,108 @@
+[
+  {
+    "Id": "4f3c2d1e90a1",
+    "Config": {
+      "Labels": {
+        "com.docker.compose.project": "0089-dramdeals",
+        "com.docker.compose.service": "web"
+      },
+      "ExposedPorts": {
+        "80/tcp": {}
+      }
+    },
+    "State": {
+      "Running": true,
+      "Health": {
+        "Status": "healthy"
+      }
+    },
+    "NetworkSettings": {
+      "Networks": {
+        "0089-dramdeals_default": {
+          "IPAddress": "172.20.0.2"
+        }
+      }
+    }
+  },
+  {
+    "Id": "7a8b9c0d1e2f",
+    "Config": {
+      "Labels": {
+        "com.docker.compose.project": "0089-dramdeals",
+        "com.docker.compose.service": "web_db"
+      },
+      "ExposedPorts": {
+        "5432/tcp": {}
+      }
+    },
+    "State": {
+      "Running": true
+    },
+    "NetworkSettings": {
+      "Networks": {
+        "0089-dramdeals_default": {
+          "IPAddress": "172.20.0.3"
+        }
+      }
+    }
+  },
+  {
+    "Id": "1f2a3b4c5d6e",
+    "Config": {
+      "Labels": null,
+      "ExposedPorts": {
+        "6379/tcp": {}
+      }
+    },
+    "State": {
+      "Running": false
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    }
+  },
+  {
+    "Id": "5e6f7a8b9c0d",
+    "Config": {
+      "Labels": null,
+      "ExposedPorts": {
+        "3000/tcp": {}
+      }
+    },
+    "State": {
+      "Running": true
+    },
+    "NetworkSettings": {
+      "Networks": {
+        "bridge": {
+          "IPAddress": "172.17.0.2"
+        }
+      }
+    }
+  },
+  {
+    "Id": "9c0d1e2f3a4b",
+    "Config": {
+      "Labels": {
+        "com.docker.compose.project": "test-project",
+        "com.docker.compose.service": "app"
+      },
+      "ExposedPorts": {
+        "8080/tcp": {}
+      }
+    },
+    "State": {
+      "Running": true,
+      "Health": {
+        "Status": "unhealthy"
+      }
+    },
+    "NetworkSettings": {
+      "Networks": {
+        "test-project_default": {
+          "IPAddress": "172.21.0.2"
+        }
+      }
+    }
+  }
+]
