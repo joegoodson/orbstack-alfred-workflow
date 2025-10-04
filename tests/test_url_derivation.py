@@ -144,7 +144,27 @@ class TestURLDerivation(unittest.TestCase):
                 }
             }
         }
-        
+
+        is_web = self.url_derivation.is_web_service(container_data, inspect_data)
+        self.assertFalse(is_web)
+
+    def test_database_not_detected_as_web(self):
+        """Ensure containers with database-style names are excluded"""
+        container_data = {
+            'Names': '/0089-dramdeals-web_db',
+            'Ports': '',
+            'Image': 'postgres:15'
+        }
+
+        inspect_data = {
+            'Config': {
+                'Labels': {
+                    'com.docker.compose.project': '0089-dramdeals',
+                    'com.docker.compose.service': 'web_db'
+                }
+            }
+        }
+
         is_web = self.url_derivation.is_web_service(container_data, inspect_data)
         self.assertFalse(is_web)
 

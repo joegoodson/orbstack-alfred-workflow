@@ -39,7 +39,7 @@ class TestContainerParsing(unittest.TestCase):
         
         self.assertEqual(enriched['id'], '4f3c2d1e90a1')
         self.assertEqual(enriched['name'], '0089-dramdeals-web')
-        self.assertEqual(enriched['display_name'], 'web')
+        self.assertEqual(enriched['display_name'], 'web - dramdeals')
         self.assertEqual(enriched['project'], '0089-dramdeals')
         self.assertEqual(enriched['service'], 'web')
         self.assertEqual(enriched['status'], 'running')
@@ -79,6 +79,19 @@ class TestContainerParsing(unittest.TestCase):
         self.assertEqual(enriched['health'], 'unhealthy')
         self.assertEqual(enriched['status'], 'running')
         self.assertTrue(enriched['is_web_service'])
+
+    def test_database_service_not_marked_web(self):
+        """Ensure database-like services are not treated as web"""
+        manager = ContainerManager()
+
+        container = self.ps_data[1]  # 0089-dramdeals-web_db
+        inspect_info = self.inspect_data[1]
+        stats_info = {}
+
+        enriched = manager._enrich_container(container, inspect_info, stats_info)
+
+        self.assertEqual(enriched['display_name'], 'web_db')
+        self.assertFalse(enriched['is_web_service'])
     
     def test_format_subtitle_with_project(self):
         """Test subtitle formatting with project"""
