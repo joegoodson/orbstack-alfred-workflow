@@ -96,6 +96,9 @@ FALLBACK_SHELL=/bin/sh
 
 # Enable debug logging
 DEBUG=0
+
+# Enable docker stats call (shows CPU usage, may slow results)
+ENABLE_STATS=0
 ```
 
 ### Debug Mode
