@@ -34,9 +34,13 @@ def create_container_item(container: dict) -> dict:
     default_action = 'open_url' if container['is_web_service'] else 'shell'
     
     # Base item
+    title = container['display_name']
+    if container.get('is_web_service'):
+        title = f"🌐 {title}"
+
     item = {
         'uid': container['id'],
-        'title': container['display_name'],
+        'title': title,
         'subtitle': format_subtitle(container),
         'arg': create_action_arg('default', container, default_action=default_action),
         'autocomplete': container['display_name'],
@@ -199,23 +203,23 @@ def main():
                 else:
                     items = []
                     
-                    # Group by project for batch actions
+                    container_items = [create_container_item(container) for container in filtered_containers]
+
+                    # Group by project for batch actions (add after container list)
                     projects = {}
                     for container in filtered_containers:
                         project = container.get('project')
                         if project:
-                            if project not in projects:
-                                projects[project] = []
-                            projects[project].append(container)
-                    
-                    # Add project batch action items (if multiple containers per project)
-                    for project, project_containers in projects.items():
-                        if len(project_containers) > 1:
-                            items.append(create_project_item(project, project_containers))
-                    
-                    # Add individual container items
-                    for container in filtered_containers:
-                        items.append(create_container_item(container))
+                            projects.setdefault(project, []).append(container)
+
+                    project_items = [
+                        create_project_item(project, project_containers)
+                        for project, project_containers in projects.items()
+                        if len(project_containers) > 1
+                    ]
+
+                    items.extend(container_items)
+                    items.extend(project_items)
         
         # Output Alfred JSON
         result = {'items': items}

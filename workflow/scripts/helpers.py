@@ -6,10 +6,48 @@ Handles Docker operations, caching, URL derivation, and container analysis
 
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+
+
+# Common ports used by web services (container-side)
+COMMON_WEB_PORTS = {
+    80, 443, 3000, 3001, 4000, 5000, 5001, 7000, 7001,
+    8000, 8001, 8080, 8081, 8888, 4200, 5173
+}
+
+# Names that suggest a container is not a website even if it matches other heuristics
+NEGATIVE_SERVICE_KEYWORDS = (
+    'db', 'database', 'postgres', 'mysql', 'mariadb', 'mongo', 'redis',
+    'cache', 'worker', 'queue', 'scheduler', 'job', 'task', 'celery',
+    'rabbit', 'message', 'broker', 'minio', 's3'
+)
+
+# Positive hints that usually point at a user-facing web service
+POSITIVE_SERVICE_KEYWORDS = (
+    'web', 'frontend', 'ui', 'client', 'site'
+)
+
+# Images that are typically web servers or frameworks serving HTTP
+WEB_IMAGE_KEYWORDS = (
+    'nginx', 'httpd', 'caddy', 'traefik', 'haproxy', 'node', 'python',
+    'gunicorn', 'uwsgi', 'apache', 'php', 'rails', 'django', 'flask',
+    'nextjs', 'nuxt', 'vite', 'express'
+)
+
+
+def clean_project_name(project: Optional[str]) -> str:
+    """Return a human-friendly project name"""
+    if not project:
+        return ''
+
+    cleaned = project.replace('_', ' ').replace('-', ' ')
+    cleaned = re.sub(r'^\d+\s*', '', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
 
 
 class Config:
@@ -28,6 +66,7 @@ class Config:
         self.cache_ttl_ms = int(os.getenv('CACHE_TTL_MS', '2000'))
         self.fallback_shell = os.getenv('FALLBACK_SHELL', '/bin/sh')
         self.debug = os.getenv('DEBUG', '0') == '1'
+        self.enable_stats = os.getenv('ENABLE_STATS', '0') == '1'
     
     def _load_env_file(self, env_file: Path):
         """Load environment variables from .env file"""
@@ -232,7 +271,7 @@ class URLDerivation:
     
     def __init__(self):
         self.config = Config()
-    
+
     def derive_url(self, container_data: Dict, inspect_data: Optional[Dict] = None) -> str:
         """Derive orb.local URL for container"""
         # Get project and service from labels
@@ -258,28 +297,83 @@ class URLDerivation:
     
     def is_web_service(self, container_data: Dict, inspect_data: Optional[Dict] = None) -> bool:
         """Determine if container is likely a web service"""
-        # Check exposed ports
-        ports = container_data.get('Ports', '')
-        if '80' in ports or '443' in ports or '->' in ports:  # Has port mappings
+        ports = self._extract_container_ports(container_data, inspect_data)
+
+        if any(port in COMMON_WEB_PORTS for port in ports):
             return True
-        
+
         # Check container/service name patterns
-        name_lower = container_data.get('Names', '').lower()
-        if any(keyword in name_lower for keyword in ['web', 'app', 'frontend', 'ui', 'nginx', 'httpd']):
+        if self._has_positive_name_hint(container_data, inspect_data):
             return True
-        
+
         # Check image patterns
-        image_lower = container_data.get('Image', '').lower()
-        if any(keyword in image_lower for keyword in ['nginx', 'httpd', 'caddy', 'traefik', 'node', 'python']):
+        image_lower = (container_data.get('Image') or '').lower()
+        if any(keyword in image_lower for keyword in WEB_IMAGE_KEYWORDS):
             return True
-        
-        # Check service label
-        if inspect_data and 'Config' in inspect_data and 'Labels' in inspect_data['Config']:
-            labels = inspect_data['Config']['Labels'] or {}
-            service = labels.get('com.docker.compose.service', '').lower()
-            if any(keyword in service for keyword in ['web', 'app', 'frontend', 'ui']):
+
+        return False
+
+    def _extract_container_ports(self, container_data: Dict, inspect_data: Optional[Dict]) -> List[int]:
+        """Collect container ports from docker ps output and inspect data"""
+        ports = set()
+
+        def _add_port(value: Optional[str]):
+            if not value:
+                return
+            value = value.strip()
+            if not value:
+                return
+            port_part = value.split('/')[0]
+            if port_part.isdigit():
+                ports.add(int(port_part))
+
+        ports_field = container_data.get('Ports', '')
+        if ports_field:
+            for mapping in ports_field.split(','):
+                mapping = mapping.strip()
+                if '->' in mapping:
+                    target = mapping.split('->')[-1]
+                    _add_port(target)
+                else:
+                    _add_port(mapping)
+
+        inspect_data = inspect_data or {}
+        config = inspect_data.get('Config', {})
+        exposed_ports = config.get('ExposedPorts') or {}
+        for port_key in exposed_ports.keys():
+            _add_port(port_key)
+
+        network_settings = inspect_data.get('NetworkSettings', {})
+        network_ports = network_settings.get('Ports') or {}
+        for port_key in network_ports.keys():
+            _add_port(port_key)
+
+        return sorted(ports)
+
+    def _has_positive_name_hint(self, container_data: Dict, inspect_data: Optional[Dict]) -> bool:
+        """Determine if names/labels indicate a web service"""
+        candidates = []
+
+        container_name = container_data.get('Names', '')
+        if container_name:
+            candidates.append(container_name.lstrip('/').lower())
+
+        inspect_data = inspect_data or {}
+        labels = (inspect_data.get('Config', {}) or {}).get('Labels') or {}
+        service = labels.get('com.docker.compose.service', '')
+        if service:
+            candidates.append(service.lower())
+
+        project = labels.get('com.docker.compose.project', '')
+        if project:
+            candidates.append(project.lower())
+
+        for candidate in candidates:
+            if any(neg in candidate for neg in NEGATIVE_SERVICE_KEYWORDS):
+                continue
+            if any(pos in candidate for pos in POSITIVE_SERVICE_KEYWORDS):
                 return True
-        
+
         return False
 
 
@@ -314,10 +408,12 @@ class ContainerManager:
         
         # Get stats (optional, can be slow)
         stats_data = {}
-        try:
-            stats_data = self.docker.get_stats(container_ids[:10])  # Limit to first 10 for performance
-        except Exception:
-            pass
+        if self.config.enable_stats:
+            running_ids = [c.get('ID', '') for c in containers if 'Up' in c.get('Status', '')]
+            try:
+                stats_data = self.docker.get_stats(running_ids[:10])  # Limit to first 10 for performance
+            except Exception:
+                pass
         
         # Enrich container data
         enriched = []
@@ -336,8 +432,12 @@ class ContainerManager:
             enriched_container = self._enrich_container(container, inspect_info, stats_info)
             enriched.append(enriched_container)
         
-        # Sort: running first, then by name
-        enriched.sort(key=lambda c: (c['status'] != 'running', c.get('display_name', '').lower()))
+        # Sort: web services first, then running state, then by name
+        enriched.sort(key=lambda c: (
+            not c.get('is_web_service', False),
+            c['status'] != 'running',
+            c.get('display_name', '').lower()
+        ))
         
         # Cache the results
         self.cache.set(cache_key, enriched)
@@ -373,11 +473,21 @@ class ContainerManager:
             status = 'unknown'
         
         # Display name (prefer service over container name)
-        display_name = service or container_name or container_id[:12]
+        base_display_name = service or container_name or container_id[:12]
         
-        # Derive URL
+        # Derive URL and determine if the container is a web service
         url = self.url_derivation.derive_url(container, inspect_data)
         is_web = self.url_derivation.is_web_service(container, inspect_data)
+
+        display_name = base_display_name
+        if is_web:
+            project_display = clean_project_name(project)
+            if service and project_display:
+                display_name = f"{service} - {project_display}"
+            elif project_display:
+                display_name = project_display
+            elif service:
+                display_name = service
         
         return {
             'id': container_id,
@@ -416,7 +526,13 @@ def format_subtitle(container: Dict) -> str:
     if container.get('health') and container['health'] != 'unknown':
         status = f"{status} • {container['health']}"
     parts.append(status)
-    
+
+    # Web indicator and URL context
+    if container.get('is_web_service'):
+        url = container.get('url')
+        if url:
+            parts.append(f"🌐 {url.rstrip('/')}")
+
     # Stats
     stats = container.get('stats', {})
     if stats.get('cpu_percent'):
