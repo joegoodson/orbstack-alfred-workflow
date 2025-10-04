@@ -34,7 +34,9 @@ def create_container_item(container: dict) -> dict:
     default_action = 'open_url' if container['is_web_service'] else 'shell'
     
     # Base item
-    title = container['display_name']
+    status_suffix = '✅' if container['status'] == 'running' else '🛑'
+
+    title = f"{container['display_name']} {status_suffix}"
     if container.get('is_web_service'):
         title = f"🌐 {title}"
 
@@ -92,13 +94,15 @@ def create_project_item(project: str, containers: list) -> dict:
     if running_count > 0:
         action = 'stop_project'
         subtitle = f"Stop {running_count} running containers"
+        status_suffix = '✅'
     else:
         action = 'start_project'
         subtitle = f"Start {stopped_count} stopped containers"
+        status_suffix = '🛑'
     
     return {
         'uid': f'project_{project}',
-        'title': f"📦 {project}",
+        'title': f"📦 {project} {status_suffix}",
         'subtitle': f"{subtitle} • {len(containers)} total containers",
         'arg': create_action_arg('project_action', {'id': project, 'name': project, 'url': ''}, project_action=action, project=project),
         'autocomplete': f"project {project}",

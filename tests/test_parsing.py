@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'workflow' / 'scripts'))
 
 from helpers import ContainerManager, format_subtitle
+from script_filter import create_container_item, create_project_item
 
 
 class TestContainerParsing(unittest.TestCase):
@@ -46,7 +47,7 @@ class TestContainerParsing(unittest.TestCase):
         self.assertEqual(enriched['health'], 'healthy')
         self.assertEqual(enriched['url'], 'https://web.0089-dramdeals.orb.local/')
         self.assertTrue(enriched['is_web_service'])
-    
+
     def test_enrich_standalone_container(self):
         """Test enrichment of standalone container"""
         manager = ContainerManager()
@@ -130,6 +131,68 @@ class TestContainerParsing(unittest.TestCase):
         
         subtitle = format_subtitle(container)
         self.assertEqual(subtitle, 'running')
+
+    def test_web_container_title_includes_status_emoji(self):
+        container = {
+            'id': 'abc123',
+            'name': '0089-dramdeals-web',
+            'display_name': 'web - dramdeals',
+            'project': '0089-dramdeals',
+            'service': 'web',
+            'status': 'running',
+            'health': 'healthy',
+            'url': 'https://web.0089-dramdeals.orb.local/',
+            'is_web_service': True,
+            'stats': {},
+            'ports': ''
+        }
+
+        item = create_container_item(container)
+        self.assertEqual(item['title'], '🌐 web - dramdeals ✅')
+
+    def test_stopped_container_title_uses_stop_emoji(self):
+        container = {
+            'id': 'def456',
+            'name': 'worker',
+            'display_name': 'worker',
+            'project': None,
+            'service': None,
+            'status': 'stopped',
+            'health': 'unknown',
+            'url': 'https://worker.orb.local/',
+            'is_web_service': False,
+            'stats': {},
+            'ports': ''
+        }
+
+        item = create_container_item(container)
+        self.assertTrue(item['title'].endswith('🛑'))
+        self.assertNotIn('🌐', item['title'])
+
+    def test_project_item_title_emojis(self):
+        containers = [
+            {
+                'id': '1',
+                'name': 'service',
+                'display_name': 'service',
+                'project': 'demo',
+                'service': 'service',
+                'status': 'running',
+                'health': 'healthy',
+                'url': 'https://service.demo.orb.local/',
+                'is_web_service': True,
+                'stats': {},
+                'ports': ''
+            }
+        ]
+
+        running_item = create_project_item('demo', containers)
+        self.assertTrue(running_item['title'].endswith('✅'))
+
+        for c in containers:
+            c['status'] = 'stopped'
+        stopped_item = create_project_item('demo', containers)
+        self.assertTrue(stopped_item['title'].endswith('🛑'))
 
 
 if __name__ == '__main__':
